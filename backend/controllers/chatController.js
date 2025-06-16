@@ -98,7 +98,7 @@ exports.createGroupChat = async (req, res) => {
 
 // add new member to group chat api
 exports.addToGroup = async (req, res) => {
-  const { chatId, userId } = req.body;
+  const { chatId, users } = req.body;
 
   try {
     const chat = await Chat.findById(chatId);
@@ -111,11 +111,14 @@ exports.addToGroup = async (req, res) => {
       return res.status(403).json({ status: 'error', payload: 'Only admin can add members' });
     }
 
-    if (chat.users.includes(userId)) {
-      return res.status(400).json({ status: 'error', payload: 'User already in group' });
+    const existingUsers = chat.users.map(u => u.toString());
+    const newUsers = users.filter(id => !existingUsers.includes(id));
+
+    if (newUsers.length === 0) {
+      return res.status(400).json({ status: 'error', payload: 'Users already in group' });
     }
 
-    chat.users.push(userId);
+    chat.users.push(...newUsers);
     await chat.save();
 
     const updatedChat = await Chat.findById(chatId)
@@ -130,7 +133,7 @@ exports.addToGroup = async (req, res) => {
 
 // remove member from group chat api
 exports.removeFromGroup = async (req, res) => {
-  const { chatId, userId } = req.body;
+  const { chatId, users } = req.body;
 
   try {
     const chat = await Chat.findById(chatId);
@@ -139,18 +142,21 @@ exports.removeFromGroup = async (req, res) => {
       return res.status(400).json({ status: 'error', payload: 'Not a group chat' });
     }
 
-    if (!chat.users.includes(userId)) {
-      return res.status(400).json({ status: 'error', payload: 'User not in group' });
+    const existingUsers = chat.users.map(u => u.toString());
+    const removeUsers = users.filter(id => existingUsers.includes(id));
+
+    if (removeUsers.length === 0) {
+      return res.status(400).json({ status: 'error', payload: 'Users not in group' });
     }
 
     const isAdmin = chat.groupAdmin.toString() === req.user._id.toString();
-    const isRemovingSelf = req.user._id.toString() === userId.toString();
+    const isRemovingSelf =  removeUsers.includes(req.user._id.toString()); 
 
-    if (!isAdmin && !isRemovingSelf) {
+    if (!isAdmin && isRemovingSelf) {
       return res.status(403).json({ status: 'error', payload: 'Only admin can remove others' });
     }
 
-    chat.users = chat.users.filter(id => id.toString() !== userId);
+    chat.removedUsers.push(...removeUsers);
     await chat.save();
 
     const updatedChat = await Chat.findById(chatId)
@@ -178,9 +184,10 @@ exports.deleteGroupChat = async (req, res) => {
       return res.status(403).json({ status: 'error', payload: 'Only the group admin can delete the group chat' });
     }
 
-    await Chat.findByIdAndDelete(chatId);
+    await Chat.findByIdAndUpdate(chatId, {isDeleted : true});
+    const groupChat = await Chat.findById(chatId);
 
-    res.status(200).json({ status: 'success', payload: 'Group chat deleted successfully' });
+    res.status(200).json({ status: 'success', payload: groupChat });
   } catch (err) {
     res.status(500).json({ status: 'error', payload: 'Internal Server error' });
   }

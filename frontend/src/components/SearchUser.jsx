@@ -7,6 +7,7 @@ import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify'
 import { addRequest, deleteFriend } from '../redux/slices/userSlice'
+import socket from '../socket';
 
 function SearchUser({ui, isOpen}) {
 
@@ -17,6 +18,7 @@ function SearchUser({ui, isOpen}) {
     const requests = useSelector((state) => state.user.requests);
     const sentRequests = useSelector((state) => state.user.sentRequests);
     const friends = useSelector((state) => state.user.friends);
+    const profile = useSelector((state) => state.user.user);
 
     const [users, setUsers] = useState([]);
     const [query, setQuery] = useState("");
@@ -50,6 +52,7 @@ function SearchUser({ui, isOpen}) {
         });
         if(res.data.status === 'success'){
             dispatch(addRequest(res.data.payload));
+            socket.emit('send request', res.data.payload, profile);
             toast.success("Request sent successfully");
         }
     }
@@ -86,8 +89,8 @@ function SearchUser({ui, isOpen}) {
                                 <div className='flex'>
                                     <img
                                         alt="Profile"
-                                        src="https://cdn-icons-png.flaticon.com/128/847/847969.png"
-                                        className="h-10 w-auto rounded-full"
+                                        src={user.profilePic === "" ? 'https://cdn-icons-png.flaticon.com/128/847/847969.png' : user.profilePic}
+                                        className="h-10 w-10 rounded-full"
                                     />
                                     <div className='mx-4'>
                                         <h2 className='text-gray-900 text-md'>{user.username}</h2>

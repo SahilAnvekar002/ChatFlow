@@ -1,11 +1,13 @@
 // ChatList component
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import moment from 'moment';
 import axios from 'axios';
 import { setMessages } from '../redux/slices/messageSlice';
 import socket from '../socket';
 import { decryptMessage} from '../utils/encryption';
+import { addOnline, removeOnline } from '../redux/slices/userSlice';
+import { GoDotFill } from "react-icons/go";
 
 function ChatList({ui, setUi, isOpen}) {
 
@@ -14,6 +16,23 @@ function ChatList({ui, setUi, isOpen}) {
     const dispatch = useDispatch();
     const user = useSelector((state) => state.auth.user);
     const chats = useSelector((state) => state.chat.chats);
+    const online = useSelector((state) => state.user.online);
+
+    useEffect(() => {
+      socket.on('user-online', (userId)=>{
+        dispatch(addOnline(userId));
+      })
+
+      socket.on('user-offline', (userId)=>{
+        dispatch(removeOnline(userId));
+      })
+
+      return ()=>{
+        socket.off('user-online');
+        socket.off('user-offline');
+      }
+    }, [])
+    
 
     // fetch chat messages and set messages state
     const fetchChatMessages = async (id) => {
@@ -37,16 +56,18 @@ function ChatList({ui, setUi, isOpen}) {
                 <div className='flex flex-col items-start w-full overflow-y-scroll'>
                     {chats?.map((chat) => {
                         return (
-                            <div className='flex cursor-pointer justify-between hover:bg-gray-100 w-full py-4 px-4' key={chat?._id} onClick={()=>fetchChatMessages(chat._id)}>
+                            <div className='relative flex cursor-pointer justify-between hover:bg-gray-100 w-full py-4 px-4' key={chat?._id} onClick={()=>fetchChatMessages(chat._id)}>
                                 <div className='flex items-center'>
                                     <img
                                         alt="Profile"
-                                        src="https://cdn-icons-png.flaticon.com/128/847/847969.png"
-                                        className="h-10 w-auto rounded-full"
+                                        src={chat.isGroupChat || chat.users.filter(u => u._id !== user._id)[0].profilePic === "" ?  'https://cdn-icons-png.flaticon.com/128/847/847969.png': chat.users.filter(u => u._id !== user._id)[0].profilePic}
+                                        className="h-10 w-10 rounded-full"
                                     />
                                     <div className='mx-4'>
                                         <h2 className='text-gray-900 text-md'>{chat.isGroupChat ? chat.chatName : chat.users.filter(u => u._id !== user._id)[0].username}</h2>
                                         <h3 className='text-gray-600 text-sm'>{chat?.latestMessage?.content ? decryptMessage(chat?.latestMessage.content).slice(0,25) : "No messages"}</h3>
+                                        {chat.isGroupChat || !online.includes(chat.users.filter(u => u._id !== user._id)[0]._id) ? '' : <GoDotFill className='absolute right-0 top-0' size={20} color='green' /> }
+                                        
                                     </div>
                                 </div>
                                 <span className='text-gray-900 text-xs'>{chat?.latestMessage?.createdAt ? moment(chat?.latestMessage.createdAt).format('hh:mm A') : ''}</span>

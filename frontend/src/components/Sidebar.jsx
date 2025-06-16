@@ -8,6 +8,7 @@ import { logoutUser } from '../redux/slices/authSlice'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { CgProfile } from 'react-icons/cg'
+import socket from '../socket';
 
 function Sidebar({setChat, setUi}) {
 
@@ -21,6 +22,7 @@ function Sidebar({setChat, setUi}) {
     const handleLogout =()=>{
         dispatch(logoutUser);
         localStorage.removeItem('user');
+        socket.emit('logout');
         navigate('/login');
         toast.success("Logged out successfully");
     }

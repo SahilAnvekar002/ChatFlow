@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { acceptRequest, declineRequest } from '../redux/slices/userSlice';
 import { toast } from 'react-toastify'
 import { addChat } from '../redux/slices/chatSlice';
+import socket from '../socket';
 
 function RequestList() {
 
@@ -28,6 +29,7 @@ function RequestList() {
             dispatch(acceptRequest(res.data.payload.acceptedUser));
             toast.success("Request accepted successfully");
             if(res.data.payload.result){
+                socket.emit('new friend', res.data.payload.result, user._id);
                 dispatch(addChat(res.data.payload.result));
             }
         }
@@ -42,7 +44,7 @@ function RequestList() {
             validateStatus: () => true
         });
         if (res.data.status === 'success') {
-            dispatch(declineRequest(res.data.payload.acceptedUser));
+            dispatch(declineRequest(res.data.payload));
             toast.success("Request declined successfully");
         }
     }
@@ -55,8 +57,8 @@ function RequestList() {
                         <div className='flex'>
                             <img
                                 alt="Profile"
-                                src="https://cdn-icons-png.flaticon.com/128/847/847969.png"
-                                className="h-10 w-auto rounded-full"
+                                src={request.profilePic === "" ? 'https://cdn-icons-png.flaticon.com/128/847/847969.png' : request.profilePic}
+                                className="h-10 w-10 rounded-full"
                             />
                             <div className='mx-4'>
                                 <h2 className='text-gray-900 text-md'>{request.username}</h2>

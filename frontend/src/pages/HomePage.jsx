@@ -8,9 +8,12 @@ import SearchUser from '../components/SearchUser'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { setChats } from '../redux/slices/chatSlice'
-import { setFriends, setProfile, setRequests, setSentRequests } from '../redux/slices/userSlice'
+import { addChat, deleteGroupChat, removeMembers, setChats } from '../redux/slices/chatSlice'
+import { addNewRequest, setFriends, setOnline, setProfile, setRequests, setSentRequests } from '../redux/slices/userSlice'
 import socket from '../socket'
+import { GrAdd } from 'react-icons/gr'
+import CreateGroupModal from '../components/CreateGroupModal'
+import { removeFromMessageChat, updateMessageChat } from '../redux/slices/messageSlice'
 
 function HomePage() {
 
@@ -18,11 +21,44 @@ function HomePage() {
 
     const dispatch = useDispatch();
     const user = useSelector((state) => state.auth.user);
-    
+
     const navigate = useNavigate();
 
     const [chat, setChat] = useState(true);
     const [ui, setUi] = useState("chatlist");
+    const [modal, setModal] = useState(false);
+
+    useEffect(() => {
+        socket.on('request accepted', (chat) => {
+            dispatch(addChat(chat));
+        })
+
+        socket.on('member added', (chat) => {
+            dispatch(addChat(chat));
+        })
+
+        socket.on('member removed', (chat) => {
+            dispatch(removeMembers(chat));
+            dispatch(removeFromMessageChat(chat));
+        })
+
+        socket.on('group chat deleted', (chatId) => {
+            dispatch(deleteGroupChat(chatId));
+            dispatch(updateMessageChat(chatId));
+        })
+
+        socket.on('request sent', (profile) => {
+            dispatch(addNewRequest(profile));
+        })
+
+        return () => {
+            socket.off('request accepted');
+            socket.off('member added');
+            socket.off('member removed');
+            socket.off('group chat deleted');
+            socket.off('request sent');
+        }
+    }, [])
 
     useEffect(() => {
         if (!user) {
@@ -37,6 +73,9 @@ function HomePage() {
             socket.on('connected', () => {
                 console.log('✅ Socket connected');
             });
+            socket.on('already-online', (onlineUserIds) => {
+                dispatch(setOnline(onlineUserIds));
+            })
         }
 
     }, [user])
@@ -102,16 +141,26 @@ function HomePage() {
     }
 
     return (
-        <div className="flex h-screen">
-            <div className='flex w-full'>
-                <Sidebar setChat={setChat} setUi={setUi}/>
-                <ChatList ui={ui} setUi={setUi} isOpen={chat}/> 
-                <SearchUser ui={ui} isOpen={chat}/>
-                <ChatBox isOpen={chat} ui={ui}/>
-                <Profile isOpen={chat} ui={ui}/>
+        <>
+            <div className="flex h-screen">
+                <div className='flex w-full'>
+                    <Sidebar setChat={setChat} setUi={setUi} />
+                    <ChatList ui={ui} setUi={setUi} isOpen={chat} />
+                    <SearchUser ui={ui} isOpen={chat} />
+                    <ChatBox isOpen={chat} ui={ui} />
+                    <Profile isOpen={chat} ui={ui} />
+                </div>
             </div>
-        </div>
 
+            <button className='absolute bottom-5 right-5 px-4 py-4 bg-gray-900 rounded-full cursor-pointer' onClick={() => setModal(true)}>
+                <GrAdd size={26} color='white' />
+            </button>
+
+            {modal && <div className='absolute top-0 flex justify-center items-center w-full h-full'>
+                <div className="fixed inset-0 bg-black/50 bg-opacity-50 pointer-events-none"/>
+                <CreateGroupModal setModal={setModal} />
+            </div>}
+        </>
     )
 }
 

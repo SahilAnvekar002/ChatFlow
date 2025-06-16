@@ -36,8 +36,8 @@ function FriendList() {
                         <div className='flex'>
                             <img
                                 alt="Profile"
-                                src="https://cdn-icons-png.flaticon.com/128/847/847969.png"
-                                className="h-10 w-auto rounded-full"
+                                src={friend.profilePic === ""? 'https://cdn-icons-png.flaticon.com/128/847/847969.png' : friend.profilePic}
+                                className="h-10 w-10 rounded-full"
                             />
                             <div className='mx-4'>
                                 <h2 className='text-gray-900 text-md'>{friend.username}</h2>

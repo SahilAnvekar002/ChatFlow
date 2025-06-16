@@ -9,7 +9,8 @@ const {
     acceptRequest,
     declineRequest,
     removeFriend,
-    getSentRequests
+    getSentRequests,
+    uploadProfilePic
 } = require('../controllers/userController');
 
 const protect = require('../middleware/protect');
@@ -23,5 +24,6 @@ router.post('/request/:id', protect, sendRequest);
 router.post('/accept/:id', protect, acceptRequest);
 router.post('/decline/:id', protect, declineRequest);
 router.post('/remove-friend/:id', protect, removeFriend);
+router.post('/upload-profile', protect, uploadProfilePic);
 
 module.exports = router;

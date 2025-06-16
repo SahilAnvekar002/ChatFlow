@@ -7,11 +7,21 @@ const chatSchema = mongoose.Schema(
             type: Boolean,
             default: false
         },
+        isDeleted: {
+            type: Boolean,
+            default: false
+        },
         chatName: {
             type: String,
             trim: true
         },
         users: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'User'
+            }
+        ],
+        removedUsers: [
             {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'User'

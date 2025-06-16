@@ -12,7 +12,7 @@ exports.searchUsers = async (req, res) => {
     const users = await User.find({
       username: { $regex: query, $options: 'i' }, // case-insensitive
       _id: { $ne: req.user._id }
-    }).select('_id username email');
+    }).select('_id username email profilePic');
 
     res.status(200).json({ status: 'success', payload: users });
   } catch (err) {
@@ -153,7 +153,7 @@ exports.getProfile = async (req, res) => {
 // fetch user requests api
 exports.getRequests = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('requests', 'username email');
+    const user = await User.findById(req.user._id).populate('requests', 'username email profilePic');
     res.status(200).json({ status: 'success', payload: user.requests });
   } catch (err) {
     res.status(500).json({ status: 'error', payload: 'Internal Server error' });
@@ -163,7 +163,7 @@ exports.getRequests = async (req, res) => {
 // fetch user sent requests api
 exports.getSentRequests = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('sentRequests', 'username email');
+    const user = await User.findById(req.user._id).populate('sentRequests', 'username email profilePic');
     res.status(200).json({ status: 'success', payload: user.sentRequests });
   } catch (err) {
     res.status(500).json({ status: 'error', payload: 'Internal Server error' });
@@ -173,7 +173,7 @@ exports.getSentRequests = async (req, res) => {
 // fetch user friends api
 exports.getFriends = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).populate('friends', 'username email');
+    const user = await User.findById(req.user._id).populate('friends', 'username email profilePic');
     res.status(200).json({ status: 'success', payload: user.friends });
   } catch (err) {
     res.status(500).json({ status: 'error', payload: 'Internal Server error' });
@@ -201,6 +201,22 @@ exports.removeFriend = async (req, res) => {
     const removedFriend = await User.findById(friendId).select("username email");
 
     res.status(200).json({ status: 'success', payload:  removedFriend});
+  } catch (err) {
+    res.status(500).json({ status: 'error', payload: 'Internal server error' });
+  }
+};
+
+// upload profile pic api
+exports.uploadProfilePic = async (req, res) => {
+  const userId = req.user._id;
+  const {profilePic} = req.body;
+
+  try {
+
+    await User.findByIdAndUpdate(userId, {profilePic});
+    const user = await User.findById(userId).select('-password');
+
+    res.status(200).json({ status: 'success', payload:  user});
   } catch (err) {
     res.status(500).json({ status: 'error', payload: 'Internal server error' });
   }
