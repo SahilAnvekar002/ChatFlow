@@ -20,7 +20,7 @@ const server = http.createServer(app);
 // Socket.io setup
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://chat-flow-seven.vercel.app'],
     methods: ['GET', 'POST'],
   },
 });
